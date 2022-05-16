@@ -1,0 +1,618 @@
+# Chapter 1: TidyText Format
+
+## Get Sermons Imported to a Dataframe
+```{r}
+#import text
+Importedtxt1 <- scan( "LPAbbaApproach.txt" , what = " ")
+Importedtxt2 <- scan( "LPAllineed.txt" , what = " ")
+Importedtxt3 <- scan( "LPBehindtheVeil.txt" , what = " ")
+Importedtxt4 <- scan( "LPKingdomInvasion.txt" , what = " ")
+Importedtxt5 <- scan( "LPKneelingforBattle.txt" , what = " ")
+Importedtxt6 <- scan( "LPReleasingtheRecords.txt" , what = " ")
+Importedtxt7 <- scan( "LPWalkinginGlory.txt" , what = " ")
+```
+
+```{r}
+#make it a table
+library(dplyr)
+
+textdf1 <- tibble(Importedtxt1)
+textdf1 <- rename(textdf1, word = Importedtxt1) %>%
+  mutate(Title = "Abba_Approach")
+
+textdf2 <- tibble(Importedtxt2)
+textdf2 <- rename(textdf2, word = Importedtxt2) %>%
+  mutate(Title = "All_I_Need")
+
+textdf3 <- tibble(Importedtxt3)
+textdf3 <- rename(textdf3, word = Importedtxt3) %>%
+  mutate(Title = "Behind_the_Veil")
+
+textdf4 <- tibble(Importedtxt4)
+textdf4 <- rename(textdf4, word = Importedtxt4) %>%
+  mutate(Title = "Kingdom_Invasion")
+
+textdf5 <- tibble(Importedtxt5)
+textdf5 <- rename(textdf5, word = Importedtxt5) %>%
+  mutate(Title = "Kneeling_for_Battle")
+
+textdf6 <- tibble(Importedtxt6)
+textdf6 <- rename(textdf6, word = Importedtxt6) %>%
+  mutate(Title = "Releasing_the_Records")
+
+textdf7 <- tibble(Importedtxt7)
+textdf7 <- rename(textdf7, word = Importedtxt7) %>%
+  mutate(Title = "Walking_in_Glory")
+```
+
+
+
+
+```{r}
+#make it lower case
+
+textdf1$word <- tolower(textdf1$word)
+
+textdf2$word <- tolower(textdf2$word)
+
+textdf3$word <- tolower(textdf3$word)
+
+textdf4$word <- tolower(textdf4$word)
+
+textdf5$word <- tolower(textdf5$word)
+
+textdf6$word <- tolower(textdf6$word)
+
+textdf7$word <- tolower(textdf7$word)
+```
+
+```{r} 
+# change phrase to a comma; may not need this for other texts
+textdf1$word <- gsub("â\200\231", "'", as.character(textdf1$word))
+textdf2$word <- gsub("â\200\231", "'", as.character(textdf2$word))
+textdf3$word <- gsub("â\200\231", "'", as.character(textdf3$word))
+textdf4$word <- gsub("â\200\231", "'", as.character(textdf4$word))
+textdf5$word <- gsub("â\200\231", "'", as.character(textdf5$word))
+textdf6$word <- gsub("â\200\231", "'", as.character(textdf6$word))
+textdf7$word <- gsub("â\200\231", "'", as.character(textdf7$word))
+```
+
+```{r}
+#filter out stop words
+library(tidytext)
+data(stop_words)
+
+textdf1 <- textdf1 %>%
+  anti_join(stop_words)
+
+textdf2 <- textdf2 %>%
+  anti_join(stop_words)
+
+textdf3 <- textdf3 %>%
+  anti_join(stop_words)
+
+textdf4 <- textdf4 %>%
+  anti_join(stop_words)
+
+textdf5 <- textdf5 %>%
+  anti_join(stop_words)
+
+textdf6 <- textdf6 %>%
+  anti_join(stop_words)
+
+textdf7 <- textdf7 %>%
+  anti_join(stop_words)
+```
+
+```{r}
+#remove punctuation
+textdf1$word <- gsub('[[:punct:] ]+', ' ', textdf1$word)
+textdf2$word <- gsub('[[:punct:] ]+', ' ', textdf2$word)
+textdf3$word <- gsub('[[:punct:] ]+', ' ', textdf3$word)
+textdf4$word <- gsub('[[:punct:] ]+', ' ', textdf4$word)
+textdf5$word <- gsub('[[:punct:] ]+', ' ', textdf5$word)
+textdf6$word <- gsub('[[:punct:] ]+', ' ', textdf6$word)
+textdf7$word <- gsub('[[:punct:] ]+', ' ', textdf7$word)
+```
+
+```{r}
+#append the dataframes together
+Paulson_sermons <- rbind(textdf1, textdf2, textdf3, textdf4, textdf5, textdf6, textdf7)
+```
+
+
+```{r}
+#count the words
+Paulson_sermons %>%
+  group_by(Title) %>%
+  count(word, sort = TRUE)
+```
+## Make Pretty Graphs
+``` {r}
+#graph most used words
+library(ggplot2)
+
+Paulson_sermons %>%
+  group_by(Title) %>% 
+  count(word, sort = TRUE) %>%
+  filter(n > 30) %>%  #PAY ATTENTION TO THIS NUMBER
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(n, word)) +
+  geom_col(aes(fill = Title)) +
+  labs(y = NULL, title = "Most Used Words")
+```
+
+# Chapter 2: sentiment Analysis
+
+
+```{r}
+library(tidytext)
+
+afinn <- get_sentiments("afinn")
+
+nrc <- get_sentiments("nrc")
+
+bing <- get_sentiments("bing")
+
+# Saif M. Mohammad and Peter Turney. (2013), ``Crowdsourcing a Word-Emotion Association Lexicon.'' Computational Intelligence, 29(3): 436-465. This is the CITATION for NRC
+```
+
+## NRC
+```{r}
+# nrc filter by text for specific sentiments: joy
+
+nrc_joy <- get_sentiments("nrc") %>%
+  filter(sentiment == "joy")
+
+textdf1_joy <- textdf1 %>%
+  inner_join(nrc_joy)%>%
+  count(word, sort = TRUE) 
+
+textdf2_joy <- textdf2 %>%
+  inner_join(nrc_joy)%>%
+  count(word, sort = TRUE)
+
+textdf3_joy <- textdf3 %>%
+  inner_join(nrc_joy)%>%
+  count(word, sort = TRUE)
+
+textdf4_joy <- textdf4 %>%
+  inner_join(nrc_joy)%>%
+  count(word, sort = TRUE)
+
+textdf5_joy <- textdf5 %>%
+  inner_join(nrc_joy)%>%
+  count(word, sort = TRUE)
+
+textdf6_joy <- textdf6 %>%
+  inner_join(nrc_joy)%>%
+  count(word, sort = TRUE)
+
+textdf7_joy <- textdf7 %>%
+  inner_join(nrc_joy)%>%
+  count(word, sort = TRUE)
+```
+
+```{r}
+# Graph Joy Words
+
+textdf1_joy %>% 
+  filter(n > 2) %>%  #PAY ATTENTION TO THIS NUMBER
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(n, word)) +
+  geom_col(fill = "yellow") +
+  labs(y = NULL)
+```
+
+
+```{r}
+# nrc filter for anger
+
+nrc_anger <- get_sentiments("nrc") %>%
+  filter(sentiment == "anger")
+
+textdf1_anger <- textdf1 %>%
+  inner_join(nrc_anger)%>%
+  count(word, sort = TRUE)
+
+textdf2_anger <- textdf2 %>%
+  inner_join(nrc_anger)%>%
+  count(word, sort = TRUE)
+
+textdf3_anger <- textdf3 %>%
+  inner_join(nrc_anger)%>%
+  count(word, sort = TRUE)
+
+textdf4_anger <- textdf4 %>%
+  inner_join(nrc_anger)%>%
+  count(word, sort = TRUE)
+
+textdf5_anger <- textdf5 %>%
+  inner_join(nrc_anger)%>%
+  count(word, sort = TRUE)
+
+textdf6_anger <- textdf6 %>%
+  inner_join(nrc_anger)%>%
+  count(word, sort = TRUE)
+
+textdf7_anger <- textdf7 %>%
+  inner_join(nrc_anger)%>%
+  count(word, sort = TRUE)
+
+```
+
+```{r}
+# Graph Anger words
+
+textdf1_anger %>%
+  filter(n > 2) %>%  #PAY ATTENTION TO THIS NUMBER
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(n, word)) +
+  geom_col(fill = "red") +
+  labs(y = NULL)
+
+textdf2_anger %>%
+  filter(n > 2) %>%  #PAY ATTENTION TO THIS NUMBER
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(n, word)) +
+  geom_col(fill = "red") +
+  labs(y = NULL)
+
+textdf3_anger %>%
+  filter(n > 2) %>%  #PAY ATTENTION TO THIS NUMBER
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(n, word)) +
+  geom_col(fill = "red") +
+  labs(y = NULL)
+
+textdf4_anger %>%
+  filter(n > 2) %>%  #PAY ATTENTION TO THIS NUMBER
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(n, word)) +
+  geom_col(fill = "red") +
+  labs(y = NULL)
+
+textdf5_anger %>%
+  filter(n > 2) %>%  #PAY ATTENTION TO THIS NUMBER
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(n, word)) +
+  geom_col(fill = "red") +
+  labs(y = NULL)
+
+textdf6_anger %>%
+  filter(n > 2) %>%  #PAY ATTENTION TO THIS NUMBER
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(n, word)) +
+  geom_col(fill = "red") +
+  labs(y = NULL)
+
+textdf7_anger %>%
+  filter(n > 2) %>%  #PAY ATTENTION TO THIS NUMBER
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(n, word)) +
+  geom_col(fill = "red") +
+  labs(y = NULL)
+
+```
+
+```{r}
+#Joy filter on Paulson_sermons
+nrc_joy <- get_sentiments("nrc") %>%
+  filter(sentiment == "joy")
+
+Paulson_sermons_joy <- Paulson_sermons %>%
+  inner_join(nrc_joy)%>%
+  count(word, Title, sort = TRUE)
+
+Paulson_sermons_joy %>%
+  filter(n > 10) %>%  #PAY ATTENTION TO THIS NUMBER
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(n, word)) +
+  geom_col(aes(fill = Title)) +
+  labs(y = NULL, title = "Joy Words")
+
+```
+
+```{r}
+#Anger filter on Paulson_sermons
+nrc_anger <- get_sentiments("nrc") %>%
+  filter(sentiment == "anger")
+
+Paulson_sermons_anger <- Paulson_sermons %>%
+  inner_join(nrc_anger)%>%
+  count(word, Title, sort = TRUE)
+
+Paulson_sermons_anger %>%
+  filter(n > 5) %>%  #PAY ATTENTION TO THIS NUMBER
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(n, word)) +
+  geom_col(aes(fill = Title)) +
+  labs(y = NULL, title = "Anger Words")
+```
+
+```{r}
+#Sadness filter on Paulson_sermons
+nrc_sadness <- get_sentiments("nrc") %>%
+  filter(sentiment == "sadness")
+
+Paulson_sermons_sadness <- Paulson_sermons %>%
+  inner_join(nrc_sadness)%>%
+  count(word, Title, sort = TRUE)
+
+Paulson_sermons_sadness %>%
+  filter(n > 5) %>%  #PAY ATTENTION TO THIS NUMBER
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(n, word)) +
+  geom_col(aes(fill = Title)) +
+  labs(y = NULL)
+```
+
+```{r}
+#Trust filter on Paulson_sermons
+nrc_trust <- get_sentiments("nrc") %>%
+  filter(sentiment == "trust")
+
+Paulson_sermons_trust <- Paulson_sermons %>%
+  inner_join(nrc_trust)%>%
+  count(word, Title, sort = TRUE)
+
+Paulson_sermons_trust %>%
+  filter(n > 10) %>%  #PAY ATTENTION TO THIS NUMBER
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(n, word)) +
+  geom_col(aes(fill = Title)) +
+  labs(y = NULL)
+```
+
+```{r}
+#Positive filter on Paulson_sermons
+nrc_positive <- get_sentiments("nrc") %>%
+  filter(sentiment == "positive")
+
+Paulson_sermons_positive <- Paulson_sermons %>%
+  inner_join(nrc_positive)%>%
+  count(word, Title, sort = TRUE)
+
+Paulson_sermons_positive %>%
+  filter(n > 15) %>%  #PAY ATTENTION TO THIS NUMBER
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(n, word)) +
+  geom_col(aes(fill = Title)) +
+  labs(y = NULL)
+```
+
+```{r}
+#Negative filter on Paulson_sermons
+nrc_negative <- get_sentiments("nrc") %>%
+  filter(sentiment == "negative")
+
+Paulson_sermons_negative <- Paulson_sermons %>%
+  inner_join(nrc_negative)%>%
+  count(word, Title, sort = TRUE)
+
+Paulson_sermons_negative %>%
+  filter(n > 6) %>%  #PAY ATTENTION TO THIS NUMBER
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(n, word)) +
+  geom_col(aes(fill = Title)) +
+  labs(y = NULL)
+```
+
+```{r}
+#Nrc facet wrap by sentiment
+#by sermon, by sentiment, by word, show count
+#trust, fear, sadness, anger, joy, disgust, etc
+
+
+NRC_Paulson_sermons <- Paulson_sermons %>%
+  inner_join(nrc)
+
+#total words in each sermon
+total_words_NRC <-(count(NRC_Paulson_sermons))
+```
+
+```{r}
+#frequency of sentiment - I have no idea how to do this
+NRC_Paulson_sermons_frequency <- count(NRC_Paulson_sermons, word, Title, sentiment, sort = TRUE) %>%
+  group_by(sentiment) %>%
+  mutate(total_sentimment = summarise(count(sentiment)))
+         
+  mutate(total = total_words,
+         frequency = n / total)
+```
+
+```{r}
+
+NRC_Paulson_sermons_frequency %>%
+  dplyr::filter(sentiment == "anger"| sentiment == "anticipation" | sentiment =="disgust" | sentiment =="fear" | sentiment == "joy" | sentiment == "sadness" | sentiment == "surprise" | sentiment == "trust") %>%
+  ggplot() +
+  geom_col(mapping = aes(x = Title, 
+                         y = NRC_Paulson_sermons_frequency$frequency,
+                         fill = Title)) +
+  facet_wrap(~sentiment, nrow = 2) +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.title.x = element_blank()) +
+  labs(title = "NRC Sentiment Frequency")
+```
+
+```{r}
+#x = sentiment, not frequency
+NRC_Paulson_sermons %>%
+  dplyr::filter(sentiment == "anger"| sentiment == "anticipation" | sentiment =="disgust" | sentiment =="fear" | sentiment == "joy" | sentiment == "sadness" | sentiment == "surprise" | sentiment == "trust") %>%
+  ggplot() +
+  geom_bar(mapping = aes(x = sentiment, fill = sentiment), show.legend = FALSE) +
+  #theme(axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.title.x = element_blank()) +
+  labs(title = "NRC Sentiments")
+```
+
+```{r}
+#facet by sentiments, x = title, not frequency
+NRC_Paulson_sermons %>%
+  ggplot() +
+  geom_bar(mapping = aes(x = Title, fill = Title)) +
+  facet_wrap(~sentiment, nrow = 2) +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.title.x = element_blank()) +
+  labs(title = "NRC Sentiments")
+```
+
+```{r}
+# NRC Pos/Neg
+NRC_Pos_Neg <- NRC_Paulson_sermons %>%
+  dplyr::filter(sentiment == "positive" | sentiment == "negative")%>%
+  mutate(value = ifelse(sentiment == "negative", 0, 1)) %>%
+  group_by(Title) %>%
+  summarize(Avg_sentiment = mean(value))
+
+ggplot(NRC_Pos_Neg) +
+  geom_col(mapping = aes(x = Title, y = Avg_sentiment, fill = Title), show.legend = FALSE) +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.title.x = element_blank()) +
+  labs(title = "NRC Average Sentiment")
+
+```
+
+## AFINN
+
+```{r}
+#afinn summarize the sentiment
+
+afinn <- Paulson_sermons %>%
+  inner_join(get_sentiments("afinn")) 
+
+mean_afinn <- afinn %>%
+  group_by(Title) %>%
+  summarize(sentiment = mean(value))
+
+ggplot(mean_afinn) +
+  geom_col(mapping = aes(x = Title, y = sentiment, fill = Title), show.legend = FALSE) +
+  theme(axis.text.x = element_blank(),
+        axis.title.x = element_blank(),
+        axis.ticks.x = element_blank()) +
+  labs(title = "AFINN Average Sentiment")
+```
+
+```{r}
+#afinn summarize the absolute sentiment
+
+afinn <- Paulson_sermons %>%
+  inner_join(get_sentiments("afinn")) 
+
+absolute_afinn <- afinn %>%
+  group_by(Title) %>%
+  mutate(abs_sentiment = abs(value))%>%
+  summarize(abs_sentiment = mean(abs_sentiment))
+
+ggplot(absolute_afinn) +
+  geom_col(mapping = aes(x = Title, y = abs_sentiment, fill = Title), show.legend = FALSE)
+```
+
+## Bing
+
+```{r}
+library(tidyverse)
+
+# summarize sentiment with bing
+bing <-get_sentiments("bing")%>%
+  mutate(value = ifelse(sentiment == "negative", 0, 1))
+
+
+bing_avg <- Paulson_sermons %>%
+  inner_join(bing) %>%
+  group_by(Title) %>%
+  summarize(Avg_sentiment = mean(value))
+```
+
+```{r}
+#Graph Bing avg sentiment by Sermon
+
+ggplot(data = bing_avg) +
+  geom_col(mapping = aes(x = Title, y = Avg_sentiment, fill = Title), show.legend = FALSE) +
+  theme(axis.text.x = element_blank(),
+        axis.title.x = element_blank(),
+        axis.ticks.x = element_blank()) +
+  labs(title = "Bing Average Sentiment")
+```
+
+# Chapter 3: TF-IDF
+
+```{r}
+#total words in all documents
+total_words <-(count(Paulson_sermons))
+total_words
+```
+```{r}
+#frequency of words
+Paulson_sermons_frequency <- count(Paulson_sermons, word, Title, sort = TRUE) %>%
+  mutate(total = total_words)
+```
+
+```{r}
+#Zipf Law; rank
+
+freq_by_rank <- Paulson_sermons_frequency %>% 
+  mutate(rank = row_number(), 
+         `term_frequency` = n/total) %>%
+  ungroup()
+
+freq_by_rank
+```
+```{r}
+#Graph by tf-idf
+freq_by_rank %>%
+  ggplot() +
+  geom_line(mapping = aes(x = rank, y = term_frequency, color = Title), se = FALSE)
+```
+# Chapter 4: Word Combinations
+
+```{r}
+fileName <- 'LPAbbaApproach.txt'
+texttest <- readChar(fileName, file.info(fileName)$size)
+Bigrams1 <-  as.data.frame(texttest) %>%
+  unnest_tokens(bigram, texttest, token = "ngrams", n = 2) %>%
+  mutate(Title = "Abba_Approach")
+
+fileName <- 'LPAllineed.txt'
+texttest <- readChar(fileName, file.info(fileName)$size)
+Bigrams2 <-  as.data.frame(texttest) %>%
+  unnest_tokens(bigram, texttest, token = "ngrams", n = 2) %>%
+  mutate(Title = "All_I_Need")
+
+fileName <- 'LPBehindtheVeil.txt'
+texttest <- readChar(fileName, file.info(fileName)$size)
+Bigrams3 <-  as.data.frame(texttest) %>%
+  unnest_tokens(bigram, texttest, token = "ngrams", n = 2) %>%
+  mutate(Title = "Behind_the_Veil")
+
+
+####NEED TO FIX BELOW THIS POINT
+
+fileName <- 'LPKingdomInvasion.txt'
+texttest <- readChar(fileName, file.info(fileName)$size)
+Bigrams4 <-  as.data.frame(texttest) %>%
+  unnest_tokens(bigram, texttest, token = "ngrams", n = 2) %>%
+  mutate(Title = "Kingdom_Invasion")
+
+fileName <- 'LPKneelingforBattle.txt'
+texttest <- readChar(fileName, file.info(fileName)$size)
+Bigrams5 <-  as.data.frame(texttest) %>%
+  unnest_tokens(bigram, texttest, token = "ngrams", n = 2) %>%
+  mutate(Title = "Kneeling_for_Battle")
+
+fileName <- 'LPReleasingtheRecords.txt'
+texttest <- readChar(fileName, file.info(fileName)$size)
+Bigrams6 <-  as.data.frame(texttest) %>%
+  unnest_tokens(bigram, texttest, token = "ngrams", n = 2) %>%
+  mutate(Title = "Releasing_the_Records")
+
+fileName <- 'LPWalkinginGlory.txt'
+texttest <- readChar(fileName, file.info(fileName)$size)
+Bigrams7 <-  as.data.frame(texttest) %>%
+  unnest_tokens(bigram, texttest, token = "ngrams", n = 2) %>%
+  mutate(Title = "Walking_in_Glory")
+```
+
+
