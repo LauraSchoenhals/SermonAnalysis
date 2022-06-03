@@ -1,4 +1,4 @@
-# SermonAnalysis
+# Sermon Analysis
 Text-mining analysis of word frequency and sentiment of sermons on the Lord's Prayer
 
 Thus Saith the Church: Analysis of Sermons Through Text Mining
